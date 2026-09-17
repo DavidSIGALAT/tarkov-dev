@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Icon } from "@mdi/react";

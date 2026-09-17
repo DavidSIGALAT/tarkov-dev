@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { Trans, useTranslation } from "react-i18next";
 import { Turnstile } from "@marsidev/react-turnstile";
 import Select from "react-select";

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import { Tooltip, Badge } from "@mui/material";
 import { useTranslation } from "react-i18next";

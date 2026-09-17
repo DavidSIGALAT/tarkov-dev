@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router";
 import { useSelector } from "react-redux";
 import { Trans, useTranslation } from "react-i18next";
 import ImageViewer from "react-simple-image-viewer";
