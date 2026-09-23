@@ -1007,6 +1007,8 @@ function Map() {
                         heightLayer = L.tileLayer(layer.tilePath, {
                             tileSize,
                             bounds,
+                            maxZoom,
+                            maxNativeZoom: mapData.maxZoom,
                             ...layerOptions,
                         });
                     }
