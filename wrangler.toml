@@ -1,10 +1,6 @@
-name = "tarkov.dev"
-type = "webpack"
-account_id = "424ad63426a1ae47d559873f929eb9fc"
-workers_dev = false
-route = "tarkov.dev/*"
-zone_id = "a17204c79af55fcf05e4975f66e2490e"
+name = "tarkov-dev-fork"
+compatibility_date = "2026-09-01"
 
-[site]
-bucket = "./build"
-entry-point = "workers-site"
+[assets]
+directory = "./build"
+not_found_handling = "single-page-application"
