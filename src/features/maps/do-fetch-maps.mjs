@@ -1,5 +1,11 @@
 import APIQuery from "../../modules/api-query.mjs";
 
+// Extract switch links the API reports but the game doesn't require, keyed by extract id.
+// Customs Dorms V-Ex only needs the rouble fee, not the ZB-013 power switch.
+const ignoredExtractSwitches = {
+    "75231a4542e0b910f7b303b5e65ca04951aad3cd": ["ae4bdfc1fc5b30100701158b56ae4d20840e0550"],
+};
+
 class MapsQuery extends APIQuery {
     constructor() {
         super("maps");
@@ -28,16 +34,19 @@ class MapsQuery extends APIQuery {
                 }
             }
             for (const extract of map.extracts) {
-                extract.switches = extract.switches.map((switchId) => {
-                    const sw = map.switches.find((s2) => s2.id === switchId);
-                    if (!sw) {
-                        return;
-                    }
-                    return {
-                        id: switchId,
-                        name: sw.name,
-                    };
-                });
+                const ignoredSwitches = ignoredExtractSwitches[extract.id] ?? [];
+                extract.switches = extract.switches
+                    .filter((switchId) => !ignoredSwitches.includes(switchId))
+                    .map((switchId) => {
+                        const sw = map.switches.find((s2) => s2.id === switchId);
+                        if (!sw) {
+                            return;
+                        }
+                        return {
+                            id: switchId,
+                            name: sw.name,
+                        };
+                    });
                 if (extract.transferItem) {
                     extract.transferItem.item = {
                         id: extract.transferItem.item,

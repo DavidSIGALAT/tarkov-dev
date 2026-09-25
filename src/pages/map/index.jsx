@@ -1423,7 +1423,8 @@ function Map() {
                         popup.appendChild(linkElement);
                     }
                 }
-                if (extract.transferItem) {
+                const transferItem = extract.transferItem && items?.find((i) => i.id === extract.transferItem.item.id);
+                if (transferItem) {
                     popup ??= L.DomUtil.create("div");
                     let itemCount = "";
                     if (extract.transferItem.count > 1) {
@@ -1431,10 +1432,10 @@ function Map() {
                     }
                     const transferText = L.DomUtil.create("div", undefined, popup);
                     transferText.innerText = `${tMaps("Required item")}:`;
-                    const itemName = `${extract.transferItem.item.name}${itemCount}`;
+                    const itemName = `${transferItem.name}${itemCount}`;
                     const itemImage = L.DomUtil.create("img", "popup-item");
-                    itemImage.setAttribute("src", `${extract.transferItem.item.baseImageLink}`);
-                    const itemLink = getReactLink(`/item/${extract.transferItem.item.normalizedName}`, itemImage);
+                    itemImage.setAttribute("src", `${transferItem.baseImageLink}`);
+                    const itemLink = getReactLink(`/item/${transferItem.normalizedName}`, itemImage);
                     itemLink.setAttribute("title", itemName);
                     itemLink.append(itemName);
                     popup.append(itemLink);
@@ -1800,7 +1801,7 @@ function Map() {
         // maxBounds are bigger than the map and the map center is not in 0,0 so we need to move the view to real center
         // console.log("Center:", L.latLngBounds(bounds).getCenter(true));
         //map.setView(L.latLngBounds(bounds).getCenter(true), undefined, {animate: false});
-    }, [mapData, t, updateSavedMapSettings, addLayer, categories, tMaps, getPoiLinkElement]);
+    }, [mapData, items, t, updateSavedMapSettings, addLayer, categories, tMaps, getPoiLinkElement]);
 
     // for markers requiring quests
     useEffect(() => {
