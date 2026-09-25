@@ -85,7 +85,7 @@ class APIQuery {
         if (!this.checkLocalStorage()) {
             return;
         }
-        for (let i = 0; i < localStorage.length ?? -1; i++) {
+        for (let i = 0; i < localStorage.length; i++) {
             const localStorageKey = localStorage.key(i);
             if (!localStorageKey.startsWith(cacheKeyPrefix)) {
                 continue;

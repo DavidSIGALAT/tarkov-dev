@@ -1,5 +1,5 @@
 import { Trans, useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 
 import { ReactComponent as DiscordIcon } from "#src/images/Discord.svg";
 import { ReactComponent as GithubIcon } from "#src/images/Github.svg";
@@ -128,7 +128,7 @@ function Footer() {
                         title="discord-iframe"
                         src="https://discord.com/widget?id=956236955815907388&theme=dark"
                         loading="lazy"
-                        // @ts-ignore
+                        // @ts-expect-error the following atrribute is valid
                         allowtransparency="true"
                         frameBorder="0"
                         sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"

@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import useStateWithLocalStorage from "../../hooks/useStateWithLocalStorage.jsx";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@mdi/react";
 import { mdiCogOutline, mdiRemote, mdiClose, mdiMenu } from "@mdi/js";
