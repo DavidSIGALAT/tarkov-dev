@@ -1,8 +1,7 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark as atomOneDark } from "react-syntax-highlighter/dist/esm/styles/prism/index.js";
 import { Trans, useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import { HashLink } from "react-router-hash-link";
+import { Link } from "react-router";
 
 import SEO from "../../components/SEO.jsx";
 //import ApiMetricsGraph from '../../components/api-metrics-graph/index.js';
@@ -114,34 +113,34 @@ function APIDocs() {
             <h2>{t("Examples")}</h2>
             <ul>
                 <li>
-                    <HashLink to="#browser-js">Browser JS</HashLink>
+                    <Link to="#browser-js">Browser JS</Link>
                 </li>
                 <li>
-                    <HashLink to="#node-js">Node JS</HashLink>
+                    <Link to="#node-js">Node JS</Link>
                 </li>
                 <li>
-                    <HashLink to="#python">Python</HashLink>
+                    <Link to="#python">Python</Link>
                 </li>
                 <li>
-                    <HashLink to="#ruby">Ruby</HashLink>
+                    <Link to="#ruby">Ruby</Link>
                 </li>
                 <li>
-                    <HashLink to="#cli">CLI</HashLink>
+                    <Link to="#cli">CLI</Link>
                 </li>
                 <li>
-                    <HashLink to="#php">PHP</HashLink>
+                    <Link to="#php">PHP</Link>
                 </li>
                 <li>
-                    <HashLink to="#java-11">Java 11</HashLink>
+                    <Link to="#java-11">Java 11</Link>
                 </li>
                 <li>
-                    <HashLink to="#csharp">C#</HashLink>
+                    <Link to="#csharp">C#</Link>
                 </li>
                 <li>
-                    <HashLink to="#go">Golang</HashLink>
+                    <Link to="#go">Golang</Link>
                 </li>
                 <li>
-                    <HashLink to="#luvit">Lua (Luvit)</HashLink>
+                    <Link to="#luvit">Lua (Luvit)</Link>
                 </li>
             </ul>
             <div className="example-wrapper">

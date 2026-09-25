@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import MenuItem from "../menu/MenuItem.jsx";
 import LoadingSmall from "../loading-small/index.jsx";

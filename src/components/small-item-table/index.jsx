@@ -1,6 +1,7 @@
+/* eslint-disable @eslint-react/no-nested-component-definitions */
 import { useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@mdi/react";
 import { mdiCloseOctagon, mdiHelpRhombus, mdiCached, mdiClipboardList, mdiTimerSand } from "@mdi/js";

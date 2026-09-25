@@ -1,6 +1,7 @@
+/* eslint-disable @eslint-react/no-nested-component-definitions */
 import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router";
 import ImageViewer from "react-simple-image-viewer";
 
 import { Icon } from "@mdi/react";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import ImageViewer from "react-simple-image-viewer";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@mui/material";
