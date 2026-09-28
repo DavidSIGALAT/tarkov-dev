@@ -18,6 +18,7 @@ import {
     setTarkovTrackerAPIKey,
     toggleTarkovTracker,
     toggleHideRemoteControl,
+    toggleHidePriceHistory,
     toggleHideDogtagBarters,
     setGameMode,
     setTarkovTrackerDomain,
@@ -112,6 +113,11 @@ function Settings() {
     const hideRemoteControlValue = useSelector((state) => state.settings.hideRemoteControl);
     const handleHideRemoteValueToggle = useCallback(() => {
         dispatch(toggleHideRemoteControl());
+    }, [dispatch]);
+
+    const hidePriceHistoryValue = useSelector((state) => state.settings.hidePriceHistory);
+    const handleHidePriceHistoryToggle = useCallback(() => {
+        dispatch(toggleHidePriceHistory());
     }, [dispatch]);
 
     const handleTrackerDomainChange = useCallback(
@@ -336,6 +342,11 @@ function Settings() {
                         label={t("Hide remote control")}
                         onChange={handleHideRemoteValueToggle}
                         checked={hideRemoteControlValue}
+                    />
+                    <ToggleFilter
+                        label={t("Hide flea price history")}
+                        onChange={handleHidePriceHistoryToggle}
+                        checked={hidePriceHistoryValue}
                     />
                 </div>
                 {/* cheeki breeki */}

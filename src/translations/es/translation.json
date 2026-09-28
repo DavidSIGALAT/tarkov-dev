@@ -569,6 +569,7 @@
   "The current estimated average player level is {{avgPlayerLevel}}": "El nivel medio estimado actual de los jugadores es {{avgPlayerLevel}}",
   "Miscellaneous": "Varios",
   "Hide remote control": "Ocultar el control remoto",
+  "Hide flea price history": "Ocultar el historial de precios del mercado de pulgas",
   "start-page-description": "¡Consulta toda la información sobre objetos, fabricaciones, trueques, mapas, niveles de botín, beneficios de la guarida, detalles de los comerciantes, una API gratuita y mucho más con tarkov.dev! Un ecosistema gratuito, hecho por la comunidad y de código abierto de herramientas y guías para Escape from Tarkov.",
   "Load More": "Cargar más",
   "Tools": "Herramientas",

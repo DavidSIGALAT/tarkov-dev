@@ -75,6 +75,7 @@ function TraderPrice({ currency, price, priceRUB }) {
 function Item() {
     const settings = useSelector((state) => state.settings[state.settings.gameMode]);
     const gameMode = useSelector((state) => state.settings.gameMode);
+    const hidePriceHistory = useSelector((state) => state.settings.hidePriceHistory);
     const navigate = useNavigate();
     const { itemName } = useParams();
     const { t } = useTranslation();
@@ -754,25 +755,29 @@ The max profitable price is impacted by the intel center and hideout management 
                     currentItemData.id !== "loading" &&
                     !currentItemData.types.includes("noFlea") && (
                         <div>
-                            <h2>
-                                {t("Flea price history")}{" "}
-                                <Select
-                                    placeholder={
-                                        priceDaysLabels.find((l) => l.value === priceDays)?.label ??
-                                        t("{{count}} days_other", { count: priceDays })
-                                    }
-                                    defaultValue={priceDays}
-                                    options={priceDaysLabels}
-                                    className="basic-multi-select historical-price-days"
-                                    classNamePrefix="select"
-                                    onChange={(event) => {
-                                        setPriceDays(event.value);
-                                    }}
-                                    styles={{ display: "inline" }}
-                                ></Select>
-                            </h2>
-                            <PriceGraph item={currentItemData} days={priceDays} />
-                            <br />
+                            {!hidePriceHistory && (
+                                <>
+                                    <h2>
+                                        {t("Flea price history")}{" "}
+                                        <Select
+                                            placeholder={
+                                                priceDaysLabels.find((l) => l.value === priceDays)?.label ??
+                                                t("{{count}} days_other", { count: priceDays })
+                                            }
+                                            defaultValue={priceDays}
+                                            options={priceDaysLabels}
+                                            className="basic-multi-select historical-price-days"
+                                            classNamePrefix="select"
+                                            onChange={(event) => {
+                                                setPriceDays(event.value);
+                                            }}
+                                            styles={{ display: "inline" }}
+                                        ></Select>
+                                    </h2>
+                                    <PriceGraph item={currentItemData} days={priceDays} />
+                                    <br />
+                                </>
+                            )}
                             <div className={`text-and-image-information-wrapper price-info-wrapper`}>
                                 <div className="price-wrapper price-wrapper-bright">
                                     <div>

@@ -184,6 +184,7 @@ const settingsSlice = createSlice({
         }),
         "pvp-season": localStorageReadJson("pvp-seasonSettings", structuredClone(defaultSettings)),
         "hideRemoteControl": localStorageReadJson("hide-remote-control", false),
+        "hidePriceHistory": localStorageReadJson("hide-price-history", false),
         "playerPosition": localStorageReadJson("playerPosition", null),
         "gameMode": localStorageReadJson("gameMode", "regular"),
         "Ti": localStorageReadJson("Ti", 0.03),
@@ -220,6 +221,10 @@ const settingsSlice = createSlice({
         toggleHideRemoteControl: (state, action) => {
             state.hideRemoteControl = !state.hideRemoteControl;
             localStorageWriteJson("hide-remote-control", state.hideRemoteControl);
+        },
+        toggleHidePriceHistory: (state, action) => {
+            state.hidePriceHistory = !state.hidePriceHistory;
+            localStorageWriteJson("hide-price-history", state.hidePriceHistory);
         },
         setPlayerPosition: (state, action) => {
             const newPosition = action.payload
@@ -358,6 +363,7 @@ export const {
     setStationOrTraderLevel,
     toggleTarkovTracker,
     toggleHideRemoteControl,
+    toggleHidePriceHistory,
     toggleHideDogtagBarters,
     setPlayerPosition,
     setGameMode,
