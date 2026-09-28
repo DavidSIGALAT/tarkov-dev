@@ -93,8 +93,8 @@ function BarterTooltip({
             ? traders.find((t) => t.id === barter.trader.id)
             : hideout.find((s) => s.id === barter.station.id);
         const sourceLevelText = barter.trader
-            ? `${source.name} ${t("LL{{level}}", { level: barter.level })}`
-            : `${source.name} ${barter.level}`;
+            ? `${source?.name ?? ""} ${t("LL{{level}}", { level: barter.level })}`
+            : `${source?.name ?? ""} ${barter.level}`;
 
         const tipTitle = barter.trader
             ? t("Barter at {{trader}}", { trader: sourceLevelText })
@@ -137,7 +137,7 @@ function BarterTooltip({
                 if (requiredItem.cheapestPrice.type === "craft") {
                     const station = hideout.find((s) => s.id === requiredItem.cheapestPrice.craft.station.id);
                     const craftInfo = t("Craft at {{stationName}} {{stationLevel}}", {
-                        stationName: station.name,
+                        stationName: station?.name ?? "",
                         stationLevel: requiredItem.cheapestPrice.craft.level,
                     });
                     sourceImage = (
@@ -147,7 +147,7 @@ function BarterTooltip({
                                 title={craftInfo}
                                 className="barter-tooltip-icon"
                                 loading="lazy"
-                                src={station.imageLink}
+                                src={station?.imageLink}
                             />
                         </Link>
                     );

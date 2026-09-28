@@ -1,3 +1,4 @@
+/* eslint-disable @eslint-react/no-nested-component-definitions */
 import { useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -1989,7 +1990,7 @@ function SmallItemTable(props) {
                         } else if (cheapestObtainInfo.craft) {
                             const craft = cheapestObtainInfo.craft;
                             const station = hideout.find((s) => s.id === craft.station.id);
-                            priceSource = `${station.name} ${craft.level}`;
+                            priceSource = `${station?.name ?? ""} ${craft.level}`;
                             let barterTipTitle = "";
                             if (craft.taskUnlock) {
                                 taskIcon = (

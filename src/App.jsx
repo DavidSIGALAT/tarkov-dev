@@ -94,9 +94,36 @@ const APIGraphQL = React.lazy(() => import("./pages/api-graphql/index.jsx"));
 let socket = false;
 let socketMonitorInterval = false;
 
+function isChunkLoadError(error) {
+    const message = `${error?.name} ${error?.message}`.toLowerCase();
+    return (
+        (message.includes("loading") && message.includes("chunk")) || message.includes("dynamically imported module")
+    );
+}
+
 function Fallback({ error, resetErrorBoundary }) {
+    const chunkLoadError = isChunkLoadError(error);
+
+    // After a new deploy the old chunk files no longer exist, so reload once to get the new build
+    useEffect(() => {
+        if (!chunkLoadError) {
+            return;
+        }
+        const reloadKey = "chunk-error-reload";
+        try {
+            const lastReload = Number(sessionStorage.getItem(reloadKey));
+            if (lastReload && Date.now() - lastReload < 10000) {
+                return;
+            }
+            sessionStorage.setItem(reloadKey, String(Date.now()));
+        } catch (e) {
+            // sessionStorage not available, reload anyway
+        }
+        window.location.reload();
+    }, [chunkLoadError]);
+
     let loadingChunkErrorMessage = "";
-    if (error.message.toLowerCase().includes("loading") && error.message.toLowerCase().includes("chunk")) {
+    if (chunkLoadError) {
         loadingChunkErrorMessage = (
             <div>
                 This error is often caused by caching issues and can usually be resolved by{" "}
