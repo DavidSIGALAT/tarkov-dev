@@ -339,7 +339,8 @@ function BossPage(params) {
         }
         for (const spawn of map.spawns) {
             for (const location of spawn.locations) {
-                const chance = map.spawns.length > 1 && location.chance === 1 ? spawn.spawnChance : location.chance;
+                // a location with a 100% chance is the boss's only location, so show how often the boss spawns
+                const chance = location.chance === 1 ? spawn.spawnChance : location.chance;
                 spawnLocations.push({
                     spawnLocations: location.name,
                     chance: chance === null ? "?" : `${parseInt(chance * 100)}%`,
