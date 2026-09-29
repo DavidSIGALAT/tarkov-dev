@@ -6,13 +6,18 @@ const ignoredExtractSwitches = {
     "75231a4542e0b910f7b303b5e65ca04951aad3cd": ["ae4bdfc1fc5b30100701158b56ae4d20840e0550"],
 };
 
-// Boss spawn zone names the API reports that don't match where their spawn points actually are.
+// Boss spawn zone names the API reports that don't match where their spawn points actually are,
+// or that are only internal zone names.
 // On Customs, ZoneGasStation points are inside the Fortress and ZoneScavBase points are around the Repair Shop.
+// Terminal's Zone2ScavPort29 has no positions; its neighbouring Zone2 port zones are all in the port area.
 const bossZoneNameOverrides = {
     customs: {
         ZoneGasStation: { en: "Fortress", es: "Fortaleza" },
         ZoneScavBase: { en: "Repair Shop", es: "Taller" },
         ZoneDormitory: { en: "Dorms", es: "Dormitorios" },
+    },
+    terminal: {
+        Zone2ScavPort29: { en: "Port (sector 2)", es: "Puerto (sector 2)" },
     },
 };
 
