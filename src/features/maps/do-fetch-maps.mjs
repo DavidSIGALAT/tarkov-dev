@@ -6,6 +6,34 @@ const ignoredExtractSwitches = {
     "75231a4542e0b910f7b303b5e65ca04951aad3cd": ["ae4bdfc1fc5b30100701158b56ae4d20840e0550"],
 };
 
+// Boss spawn zone names the API reports that don't match where their spawn points actually are.
+// On Customs, ZoneGasStation points are inside the Fortress and ZoneScavBase points are around the Repair Shop.
+const bossZoneNameOverrides = {
+    customs: {
+        ZoneGasStation: { en: "Fortress", es: "Fortaleza" },
+        ZoneScavBase: { en: "Repair Shop", es: "Taller" },
+        ZoneDormitory: { en: "Dorms", es: "Dormitorios" },
+    },
+};
+
+// Boss spawn points reported by the community that are not in the game data.
+// They have no known chance, so chance is null.
+const communityBossSpawns = {
+    customs: [
+        {
+            mob: "bossBully",
+            spawnKey: "CommunityNewGasStation",
+            name: { en: "New Gas Station (community reported)", es: "Gasolinera nueva (según la comunidad)" },
+            positions: [
+                { x: 416.5, y: 1.3, z: 29 },
+                { x: 414.5, y: 1.3, z: 38.5 },
+            ],
+        },
+    ],
+};
+
+const localizedName = (names, language) => names[language] ?? names.en;
+
 class MapsQuery extends APIQuery {
     constructor() {
         super("maps");
@@ -31,6 +59,34 @@ class MapsQuery extends APIQuery {
                     spawn.switch = {
                         id: spawn.switch,
                     };
+                }
+                const zoneNames = bossZoneNameOverrides[map.normalizedName] ?? {};
+                for (const location of spawn.spawnLocations) {
+                    if (zoneNames[location.spawnKey]) {
+                        location.name = localizedName(zoneNames[location.spawnKey], language);
+                    }
+                }
+            }
+            for (const communitySpawn of communityBossSpawns[map.normalizedName] ?? []) {
+                const bossSpawn = map.bosses.find((spawn) => spawn.mob === communitySpawn.mob);
+                if (!bossSpawn) {
+                    continue;
+                }
+                bossSpawn.spawnLocations.push({
+                    name: localizedName(communitySpawn.name, language),
+                    spawnKey: communitySpawn.spawnKey,
+                    chance: null,
+                    communityReported: true,
+                    positions: communitySpawn.positions,
+                });
+                for (const position of communitySpawn.positions) {
+                    map.spawns.push({
+                        zoneName: communitySpawn.spawnKey,
+                        position,
+                        sides: ["scav"],
+                        categories: ["boss"],
+                        communityReported: true,
+                    });
                 }
             }
             for (const extract of map.extracts) {

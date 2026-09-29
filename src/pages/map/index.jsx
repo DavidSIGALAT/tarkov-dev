@@ -197,6 +197,9 @@ function markerIsOnActiveLayer(marker) {
     return false;
 }
 
+// loose loot handbook categories that list each of their items as a separate layer
+const looseLootItemSubmenuCategories = ["battle-pass-documents"];
+
 function checkMarkerForActiveLayers(event) {
     const marker = event.target || event;
     const outline = marker.options.outline;
@@ -741,14 +744,14 @@ function Map() {
     );
 
     const addLayer = useCallback(
-        (layer, layerKey, groupKey, layerName, imageUrl) => {
+        (layer, layerKey, groupKey, layerName, imageUrl, parent) => {
             /*for (const layerId in layer._layers) {
             const l = layer._layers[layerId];
             l.options.layerKey = layerKey;
             l.options.groupKey = groupKey;
         };*/
             layer.key = layerKey;
-            const layerOptions = getLayerOptions(layerKey, groupKey, layerName, imageUrl);
+            const layerOptions = { ...getLayerOptions(layerKey, groupKey, layerName, imageUrl), ...parent };
             if (!layerOptions.layerHidden) {
                 layer.addTo(mapRef.current);
             }
@@ -1246,6 +1249,7 @@ function Map() {
                 "af": L.layerGroup(),
                 "bloodhound": L.layerGroup(),
             };
+            const bossSpawnLayers = {};
             for (const spawn of mapData.spawns) {
                 if (!positionIsInBounds(spawn.position)) {
                     continue;
@@ -1335,28 +1339,89 @@ function Map() {
                             ),
                         );
                     }
+                    if (spawn.communityReported) {
+                        const communityNote = L.DomUtil.create("div", undefined, popupContent);
+                        communityNote.textContent = t("Community reported, not in game data");
+                    }
                 } else {
                     const spawnDiv = L.DomUtil.create("div", undefined, popupContent);
                     spawnDiv.textContent = categories[`spawn_${spawnType}`];
                 }
                 addElevation(spawn, popupContent);
 
-                const marker = L.marker(pos(spawn.position), {
-                    icon: spawnIcon,
-                    position: spawn.position,
-                    riseOnHover: true,
-                });
-                if (popupContent.childNodes.length > 0) {
-                    marker.bindPopup(L.popup().setContent(popupContent));
+                const createSpawnMarker = (content) => {
+                    const marker = L.marker(pos(spawn.position), {
+                        icon: spawnIcon,
+                        position: spawn.position,
+                        riseOnHover: true,
+                    });
+                    if (content.childNodes.length > 0) {
+                        marker.bindPopup(L.popup().setContent(content));
+                    }
+                    marker.position = spawn.position;
+                    marker.on("add", checkMarkerForActiveLayers);
+                    marker.on("click", activateMarkerLayer);
+                    return marker;
+                };
+
+                if (bosses.length > 0) {
+                    // one marker per boss so each boss can be toggled on its own layer
+                    for (const boss of bosses) {
+                        if (!bossSpawnLayers[boss.normalizedName]) {
+                            bossSpawnLayers[boss.normalizedName] = { name: boss.name, layer: L.layerGroup() };
+                        }
+                        if (spawnType !== "boss") {
+                            // bosses with their own marker icon show it in the layer list
+                            bossSpawnLayers[boss.normalizedName].image =
+                                `${process.env.PUBLIC_URL}/maps/interactive/spawn_${spawnType}.png`;
+                        }
+                        createSpawnMarker(popupContent.cloneNode(true)).addTo(
+                            bossSpawnLayers[boss.normalizedName].layer,
+                        );
+                    }
+                } else {
+                    createSpawnMarker(popupContent).addTo(spawnLayers[spawnType]);
                 }
-                marker.position = spawn.position;
-                marker.on("add", checkMarkerForActiveLayers);
-                marker.on("click", activateMarkerLayer);
-                marker.addTo(spawnLayers[spawnType]);
 
                 checkMarkerBounds(spawn.position, markerBounds);
             }
+
+            // settings saved before each boss had its own layer used the shared "spawn_boss" key
+            // or a "spawn_<boss>" key for bosses with their own icon
+            const hiddenLayers = mapSettingsRef.current.hiddenLayers;
+            const oldBossLayerKeys = ["spawn_boss", ...Object.keys(bossSpawnLayers).map((key) => `spawn_${key}`)];
+            if (hiddenLayers.some((key) => oldBossLayerKeys.includes(key))) {
+                const migratedHiddenLayers = Object.keys(bossSpawnLayers)
+                    .filter((key) => hiddenLayers.includes("spawn_boss") || hiddenLayers.includes(`spawn_${key}`))
+                    .map((key) => `spawn_boss_${key}`)
+                    .filter((key) => !hiddenLayers.includes(key));
+                mapSettingsRef.current.hiddenLayers = [
+                    ...hiddenLayers.filter((key) => !oldBossLayerKeys.includes(key)),
+                    ...migratedHiddenLayers,
+                ];
+                updateSavedMapSettings();
+            }
+
             for (const key in spawnLayers) {
+                if (key === "boss") {
+                    const bossParent = {
+                        parentKey: "spawn_boss",
+                        parentName: Object.keys(bossSpawnLayers).length > 1 ? tMaps("Bosses") : tMaps("Boss"),
+                        parentImage: `${process.env.PUBLIC_URL}/maps/interactive/spawn_boss.png`,
+                        parentCollapsed: Boolean(mapSettingsRef.current.collapsedGroups?.includes("spawn_boss")),
+                    };
+                    for (const [bossKey, bossLayer] of Object.entries(bossSpawnLayers)) {
+                        addLayer(
+                            bossLayer.layer,
+                            `spawn_boss_${bossKey}`,
+                            "Spawns",
+                            bossLayer.name,
+                            bossLayer.image,
+                            bossParent,
+                        );
+                    }
+                    continue;
+                }
                 if (Object.keys(spawnLayers[key]._layers).length > 0) {
                     addLayer(spawnLayers[key], `spawn_${key}`, "Spawns");
                 }
@@ -2110,14 +2175,36 @@ function Map() {
                         continue;
                     }
                     markerCategories.add(category.id);
-                    if (!looseLootLayers[category.normalizedName]) {
-                        looseLootLayers[category.normalizedName] = {
+                    let layerKey = category.normalizedName;
+                    let layerInfo = {
+                        label: tMaps(category.name),
+                        image: category.imageLink,
+                    };
+                    if (looseLootItemSubmenuCategories.includes(category.normalizedName)) {
+                        // one layer per item, listed under its category
+                        layerKey = `${category.normalizedName}_${lootItem.normalizedName}`;
+                        layerInfo = {
+                            label: lootItem.name,
+                            image: lootItem.iconLink,
+                            parent: {
+                                parentKey: category.normalizedName,
+                                parentName: tMaps(category.name),
+                                parentImage: category.imageLink,
+                                parentCollapsed: Boolean(
+                                    mapSettingsRef.current.collapsedGroups?.includes(category.normalizedName),
+                                ),
+                            },
+                        };
+                        // lets the loose loot overlay handler know this marker also belongs to the item layer
+                        lootMarker.options.categories.push(layerKey);
+                    }
+                    if (!looseLootLayers[layerKey]) {
+                        looseLootLayers[layerKey] = {
                             layer: L.layerGroup({ category: category.normalizedName }),
-                            label: category.name,
-                            image: category.imageLink,
+                            ...layerInfo,
                         };
                     }
-                    lootMarker.addTo(looseLootLayers[category.normalizedName].layer);
+                    lootMarker.addTo(looseLootLayers[layerKey].layer);
                 }
 
                 addElevation(looseLoot, popup);
@@ -2127,13 +2214,50 @@ function Map() {
                 lootMarker.on("click", activateMarkerLayer);
                 //lootMarker.addTo(looseLootLayers[layerKey].layer);
             }
+            // settings saved before these categories had a submenu hide all their items with the category key
+            const hiddenLayers = mapSettingsRef.current.hiddenLayers;
+            const oldCategoryKeys = Object.values(looseLootLayers)
+                .map((layerInfo) => layerInfo.parent?.parentKey)
+                .filter((parentKey) => parentKey && hiddenLayers.includes(parentKey));
+            if (oldCategoryKeys.length > 0) {
+                const migratedHiddenLayers = Object.entries(looseLootLayers)
+                    .filter(
+                        ([layerKey, layerInfo]) =>
+                            oldCategoryKeys.includes(layerInfo.parent?.parentKey) && !hiddenLayers.includes(layerKey),
+                    )
+                    .map(([layerKey]) => layerKey);
+                mapSettingsRef.current.hiddenLayers = [
+                    ...hiddenLayers.filter((key) => !oldCategoryKeys.includes(key)),
+                    ...migratedHiddenLayers,
+                ];
+                updateSavedMapSettings();
+            }
+
+            // keep categories in their original order, with submenu items sorted by name
+            const orderedLayerKeys = [];
             for (const layerKey in looseLootLayers) {
+                const parentKey = looseLootLayers[layerKey].parent?.parentKey;
+                if (!parentKey) {
+                    orderedLayerKeys.push(layerKey);
+                    continue;
+                }
+                if (orderedLayerKeys.some((key) => looseLootLayers[key].parent?.parentKey === parentKey)) {
+                    continue;
+                }
+                orderedLayerKeys.push(
+                    ...Object.keys(looseLootLayers)
+                        .filter((key) => looseLootLayers[key].parent?.parentKey === parentKey)
+                        .sort((a, b) => looseLootLayers[a].label.localeCompare(looseLootLayers[b].label)),
+                );
+            }
+            for (const layerKey of orderedLayerKeys) {
                 addLayer(
                     looseLootLayers[layerKey].layer,
                     layerKey,
                     "Loose Loot",
                     looseLootLayers[layerKey].label,
                     looseLootLayers[layerKey].image,
+                    looseLootLayers[layerKey].parent,
                 );
             }
         }
@@ -2145,7 +2269,7 @@ function Map() {
             }
         }
         refreshMapSearch();
-    }, [mapData, items, handbook, addLayer, t, tMaps, getPoiLinkElement]);
+    }, [mapData, items, handbook, addLayer, t, tMaps, getPoiLinkElement, updateSavedMapSettings]);
 
     useEffect(() => {
         if (!mapData || mapData.projection !== "interactive") {

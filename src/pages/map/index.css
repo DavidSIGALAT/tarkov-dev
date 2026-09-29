@@ -101,6 +101,26 @@
     text-indent: 15px;
 }
 
+.leaflet-control-layers-group .leaflet-control-layers-children label:not(.leaflet-control-layers-group-label) {
+    text-indent: 30px;
+}
+
+.leaflet-control-layers-parent.collapsed .leaflet-control-layers-children,
+.leaflet-control-layers-parent.collapsed .leaflet-control-layers-parent-collapse,
+.leaflet-control-layers-parent:not(.collapsed) .leaflet-control-layers-parent-expand {
+    display: none;
+}
+
+.leaflet-control-layers-parent-label {
+    cursor: pointer;
+}
+
+/* the label's text-indent is inherited and would push the sign under the layer image */
+.leaflet-control-layers-parent-collapse,
+.leaflet-control-layers-parent-expand {
+    text-indent: 0;
+}
+
 .leaflet-control-layers-group.group-collapsable.collapsed .leaflet-control-layers-group-collapse,
 .leaflet-control-layers-group.group-collapsable:not(.collapsed) .leaflet-control-layers-group-expand,
 .leaflet-control-layers-group.group-collapsable.collapsed label:not(.leaflet-control-layers-group-label) {

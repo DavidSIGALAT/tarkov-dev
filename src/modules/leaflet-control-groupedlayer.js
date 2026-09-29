@@ -58,6 +58,8 @@ L.Control.GroupedLayers = L.Control.extend({
         this._handlingClick = false;
         this._groupList = [];
         this._domGroups = [];
+        this._domParents = {};
+        this._collapsedParents = new Set();
 
         for (i in baseLayers) {
             this._addLayer(baseLayers[i], i);
@@ -206,6 +208,16 @@ L.Control.GroupedLayers = L.Control.extend({
             overlay: options.overlay,
             key: options.layerKey,
         };
+        if (options.parentKey) {
+            if (options.parentCollapsed) {
+                this._collapsedParents.add(options.parentKey);
+            }
+            _layer.parent = {
+                key: options.parentKey,
+                name: options.parentName,
+                image: options.parentImage,
+            };
+        }
         this._layers.push(_layer);
 
         const group = options.groupName || "";
@@ -277,6 +289,7 @@ L.Control.GroupedLayers = L.Control.extend({
         this._baseLayersList.innerHTML = "";
         this._overlaysList.innerHTML = "";
         this._domGroups.length = 0;
+        this._domParents = {};
 
         var baseLayersPresent = false,
             overlaysPresent = false;
@@ -470,6 +483,10 @@ L.Control.GroupedLayers = L.Control.extend({
             }
 
             container = groupContainer;
+
+            if (obj.parent) {
+                container = this._getParentChildrenContainer(obj, groupContainer);
+            }
         } else {
             container = this._baseLayersList;
         }
@@ -477,6 +494,129 @@ L.Control.GroupedLayers = L.Control.extend({
         container.appendChild(label);
 
         return label;
+    },
+
+    // Creates (once per render) a parent row with its own checkbox that holds child layers
+    _getParentChildrenContainer: function (obj, groupContainer) {
+        const parentId = `${obj.group.id}-${obj.parent.key}`;
+        let parentContainer = this._domParents[parentId];
+        if (!parentContainer) {
+            parentContainer = document.createElement("div");
+            parentContainer.className = "leaflet-control-layers-parent";
+            if (this._collapsedParents.has(obj.parent.key)) {
+                parentContainer.classList.add("collapsed");
+            }
+
+            const parentLabel = document.createElement("label");
+            parentLabel.className = "leaflet-control-layers-parent-label";
+
+            const parentInput = document.createElement("input");
+            parentInput.type = "checkbox";
+            parentInput.className = "leaflet-control-layers-parent-selector";
+            L.DomEvent.on(parentInput, "click", (event) => this._onParentInputClick(event, parentContainer), this);
+            parentLabel.appendChild(parentInput);
+
+            const parentCollapse = document.createElement("span");
+            parentCollapse.className = "leaflet-control-layers-parent-collapse " + this.options.groupsExpandedClass;
+            parentLabel.appendChild(parentCollapse);
+
+            const parentExpand = document.createElement("span");
+            parentExpand.className = "leaflet-control-layers-parent-expand " + this.options.groupsCollapsedClass;
+            parentLabel.appendChild(parentExpand);
+
+            L.DomEvent.on(
+                parentLabel,
+                "click",
+                (event) => this._onParentCollapseToggle(event, parentContainer, obj.parent.key),
+                this,
+            );
+
+            const parentName = document.createElement("span");
+            const parentImage = obj.parent.image ? `<img src="${obj.parent.image}" class='control-item-image' /> ` : "";
+            parentName.innerHTML = ` ${parentImage}${obj.parent.name}`;
+            parentLabel.appendChild(parentName);
+
+            const childrenContainer = document.createElement("div");
+            childrenContainer.className = "leaflet-control-layers-children";
+
+            parentContainer.appendChild(parentLabel);
+            parentContainer.appendChild(childrenContainer);
+            groupContainer.appendChild(parentContainer);
+
+            this._domParents[parentId] = parentContainer;
+        }
+        return parentContainer.querySelector(".leaflet-control-layers-children");
+    },
+
+    _onParentCollapseToggle: function (event, parentContainer, parentKey) {
+        L.DomEvent.stopPropagation(event);
+        L.DomEvent.preventDefault(event);
+        const collapsed = parentContainer.classList.toggle("collapsed");
+        if (collapsed) {
+            this._collapsedParents.add(parentKey);
+        } else {
+            this._collapsedParents.delete(parentKey);
+        }
+        controlContainer.dispatchEvent(
+            new CustomEvent("groupCollapseToggle", {
+                bubbles: false,
+                detail: {
+                    key: parentKey,
+                    collapsed,
+                },
+            }),
+        );
+    },
+
+    _onParentInputClick: function (event, parentContainer) {
+        L.DomEvent.stopPropagation(event);
+        const checked = event.target.checked;
+        this._handlingClick = true;
+
+        for (const input of parentContainer.querySelectorAll("input.leaflet-control-layers-selector")) {
+            input.checked = checked;
+            const obj = this._getLayer(input.layerId);
+            if (checked && !this._map.hasLayer(obj.layer)) {
+                this._map.addLayer(obj.layer);
+            } else if (!checked && this._map.hasLayer(obj.layer)) {
+                this._map.removeLayer(obj.layer);
+            }
+            if (obj.layer.key) {
+                controlContainer.dispatchEvent(
+                    new CustomEvent("layerToggle", {
+                        bubbles: false,
+                        detail: {
+                            key: obj.layer.key,
+                            checked,
+                        },
+                    }),
+                );
+            }
+        }
+
+        if (this.options.groupCheckboxes) {
+            this._refreshGroupsCheckStates();
+        }
+
+        this._handlingClick = false;
+    },
+
+    _refreshParentsCheckStates: function () {
+        for (const parentContainer of Object.values(this._domParents)) {
+            const parentInput = parentContainer.querySelector(".leaflet-control-layers-parent-selector");
+            const childInputs = parentContainer.querySelectorAll("input.leaflet-control-layers-selector");
+            const checkedChildInputs = parentContainer.querySelectorAll(
+                "input.leaflet-control-layers-selector:checked",
+            );
+            parentInput.indeterminate = false;
+            if (checkedChildInputs.length === childInputs.length) {
+                parentInput.checked = true;
+            } else if (checkedChildInputs.length === 0) {
+                parentInput.checked = false;
+            } else {
+                parentInput.indeterminate = true;
+            }
+        }
     },
 
     _onGroupCollapseToggle: function (event) {
@@ -533,6 +673,7 @@ L.Control.GroupedLayers = L.Control.extend({
             );
         }
 
+        this_legend._refreshParentsCheckStates();
         this_legend._handlingClick = false;
     },
 
@@ -568,6 +709,7 @@ L.Control.GroupedLayers = L.Control.extend({
     },
 
     _refreshGroupsCheckStates: function () {
+        this._refreshParentsCheckStates();
         for (var i = 0; i < this._domGroups.length; i++) {
             var groupContainer = this._domGroups[i];
             if (groupContainer) {
