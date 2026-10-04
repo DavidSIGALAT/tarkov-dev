@@ -298,6 +298,22 @@ const Menu = () => {
                                                                 >
                                                                     {item.text}
                                                                 </Link>
+                                                                {item.children?.length > 0 && (
+                                                                    <ul className="mobile-child-items">
+                                                                        {item.children.map((child, cIdx) => (
+                                                                            <li key={cIdx}>
+                                                                                <Link
+                                                                                    to={child.to}
+                                                                                    onClick={() =>
+                                                                                        setIsMobileMenuOpen(false)
+                                                                                    }
+                                                                                >
+                                                                                    {child.text}
+                                                                                </Link>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                )}
                                                             </li>
                                                         );
                                                     })}

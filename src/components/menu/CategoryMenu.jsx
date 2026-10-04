@@ -43,6 +43,17 @@ const CategoryMenu = ({ title, items, to }) => {
                         )}
                         <span style={{ verticalAlign: "middle" }}>{item.text}</span>
                     </Link>
+                    {item.children?.length > 0 && (
+                        <ul className="child-items">
+                            {item.children.map((child, childIndex) => (
+                                <li key={childIndex}>
+                                    <Link to={child.to} onClick={() => setIsOpen(false)}>
+                                        <span style={{ verticalAlign: "middle" }}>{child.text}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </li>
             );
         });

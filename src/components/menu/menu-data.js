@@ -23,17 +23,43 @@ const FACTION_NORMALIZED_NAMES = [
     "black-div-season",
 ];
 
+const COMPLEMENTARY_MAPS = ["openworld", "transits"];
+
+const toMapItem = (map) => ({
+    text: map.name,
+    to: `/map/${map.key}`,
+    icon: map.icon,
+    padding: map.menuPadding,
+});
+
+// Main maps first, with their alternative versions (night factory, dark lab, ground zero 21+)
+// nested under them, followed by a separate section for the complementary maps.
+const getMapsMenuItems = (t, uniqueMaps) => {
+    const alternatives = uniqueMaps.filter((map) => map.suppress);
+    const main = uniqueMaps.filter((map) => !map.suppress && !COMPLEMENTARY_MAPS.includes(map.normalizedName));
+    const complementary = uniqueMaps.filter((map) => COMPLEMENTARY_MAPS.includes(map.normalizedName));
+
+    const items = main.map((map) => {
+        const item = toMapItem(map);
+        const children = alternatives.filter((alt) => alt.normalizedName === map.normalizedName).map(toMapItem);
+        return children.length ? { ...item, children } : item;
+    });
+
+    if (complementary.length) {
+        items.push({
+            text: t("Complementary maps"),
+            items: complementary.map(toMapItem),
+        });
+    }
+    return items;
+};
+
 export const getMenuData = (t, { traders, bosses, uniqueMaps, categoryPages }) => [
     {
         id: "maps",
         text: t("Maps"),
         to: "/maps/",
-        items: uniqueMaps.map((map) => ({
-            text: map.name,
-            to: `/map/${map.key}`,
-            icon: map.icon,
-            padding: map.menuPadding,
-        })),
+        items: getMapsMenuItems(t, uniqueMaps),
     },
     {
         id: "items",

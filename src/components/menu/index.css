@@ -518,3 +518,29 @@
         display: none !important;
     }
 }
+
+/* Alternative maps nested under their main map */
+.child-items {
+    list-style: none;
+    margin: 0 0 4px 22px;
+    padding: 0 0 0 12px;
+    border-left: 1px solid rgb(210 175 120 / 0.25);
+}
+
+.child-items a {
+    font-size: 13px;
+    padding: 6px 12px;
+    opacity: 0.85;
+}
+
+.mobile-child-items {
+    list-style: none;
+    padding: 0 0 0 20px;
+    margin: -4px 0 8px 0;
+}
+
+.mobile-category-items .mobile-child-items > li > a {
+    font-size: 14px;
+    padding: 8px 12px;
+    border-left: 2px solid rgb(210 175 120 / 0.35);
+}

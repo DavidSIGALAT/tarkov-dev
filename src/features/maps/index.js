@@ -164,6 +164,7 @@ export default function useMapsData() {
 
 export const useMapImages = () => {
     const { data: maps } = useMapsData();
+    const lang = useLangCode();
     let allMaps = useMemo(() => {
         const mapImages = {};
         const apiImageDataMerge = (mapGroup, imageData, apiData) => {
@@ -171,6 +172,8 @@ export const useMapImages = () => {
             const localizedMapName = i18n.exists(nameTranslationKey, { ns: "maps" })
                 ? i18n.t(nameTranslationKey, { ns: "maps" })
                 : apiData?.name || i18n.t(nameTranslationKey, { ns: "maps" });
+            // translated image variants are stored as <key>.<lang>.jpg
+            const imageFile = imageData.localizedImages?.includes(lang) ? `${imageData.key}.${lang}` : imageData.key;
             mapImages[imageData.key] = {
                 id: apiData?.id || mapGroup.id,
                 ...imageData,
@@ -181,8 +184,8 @@ export const useMapImages = () => {
                 description: apiData?.description || i18n.t(`${mapGroup.normalizedName}-description`, { ns: "maps" }),
                 duration: apiData?.raidDuration ? apiData?.raidDuration + " min" : undefined,
                 players: apiData?.players || mapGroup.players,
-                image: `/maps/${imageData.key}.jpg`,
-                imageThumb: `/maps/${imageData.key}_thumb.jpg`,
+                image: `/maps/${imageFile}.jpg`,
+                imageThumb: `/maps/${imageFile}_thumb.jpg`,
                 bosses: apiData?.bosses.map((bossSpawn) => {
                     return {
                         name: bossSpawn.name,
@@ -246,7 +249,7 @@ export const useMapImages = () => {
             }
         }
         return mapImages;
-    }, [maps]);
+    }, [maps, lang]);
     return allMaps;
 };
 

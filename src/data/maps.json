@@ -2950,6 +2950,7 @@
         "maps": [
             {
                 "key": "transits-2d",
+                "localizedImages": ["es"],
                 "projection": "2D",
                 "author": "re3mr",
                 "authorLink": "https://reemr.se"
