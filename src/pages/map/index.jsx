@@ -2138,7 +2138,7 @@ function Map() {
                         (c) => c.id === markerCategories.values().next().value.id,
                     );
                     iconUrl = category.imageLink;
-                    markerTitle = category.name;
+                    markerTitle = tMaps(category.name);
                     //className = 'loot-outline';
                 }
                 const lootIcon = new L.Icon({
