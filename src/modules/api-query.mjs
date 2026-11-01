@@ -1,6 +1,3 @@
-import LZString from "lz-string";
-
-import graphqlRequest from "./graphql-request.mjs";
 import apiRequest from "./api-request.mjs";
 
 const defaultOptions = {
@@ -18,10 +15,6 @@ class APIQuery {
 
     apiRequest(path, options) {
         return apiRequest(path, options);
-    }
-
-    graphqlRequest(queryString, variables) {
-        return graphqlRequest(queryString, variables);
     }
 
     async query() {
@@ -64,12 +57,7 @@ class APIQuery {
             const value = localStorage.getItem(storageKey);
 
             if (typeof value === "string") {
-                let cached;
-                try {
-                    cached = JSON.parse(value);
-                } catch (error) {
-                    cached = JSON.parse(LZString.decompress(value));
-                }
+                const cached = JSON.parse(value);
                 if (new Date() - cached.updated < this.cacheTtl) {
                     return cached.data;
                 }
@@ -85,7 +73,7 @@ class APIQuery {
         if (!this.checkLocalStorage()) {
             return;
         }
-        for (let i = 0; i < localStorage.length ?? -1; i++) {
+        for (let i = 0; i < localStorage.length; i++) {
             const localStorageKey = localStorage.key(i);
             if (!localStorageKey.startsWith(cacheKeyPrefix)) {
                 continue;

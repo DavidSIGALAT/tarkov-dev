@@ -3,7 +3,7 @@ import CookieConsent from "react-cookie-consent";
 import { ErrorBoundary } from "react-error-boundary";
 import { Helmet } from "react-helmet";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router";
 import { ThemeProvider } from "@mui/material/styles";
 
 import "./App.css";
@@ -11,6 +11,7 @@ import theme from "./modules/mui-theme.mjs";
 
 import i18n from "./i18n.js";
 
+import { useScrollToHash } from "./components/useScrollToHash.jsx";
 import RemoteControlId from "./components/remote-control-id/index.jsx";
 import { fetchTarkovTrackerProgress, setPlayerPosition } from "./features/settings/settingsSlice.mjs";
 
@@ -78,6 +79,7 @@ const Trader = React.lazy(() => import("./pages/trader/index.jsx"));
 const ItemTracker = React.lazy(() => import("./pages/item-tracker/index.jsx"));
 const Hideout = React.lazy(() => import("./pages/hideout/index.jsx"));
 const WipeLength = React.lazy(() => import("./pages/wipe-length/index.jsx"));
+const Season = React.lazy(() => import("./pages/season/index.jsx"));
 const Achievements = React.lazy(() => import("./pages/achievements/index.jsx"));
 const Players = React.lazy(() => import("./pages/players/index.jsx"));
 const Player = React.lazy(() => import("./pages/player/index.jsx"));
@@ -172,23 +174,24 @@ function Fallback({ error, resetErrorBoundary }) {
 }
 
 function App() {
+    useScrollToHash();
     const connectToId = new URLSearchParams(window.location.search).get("connection");
-    if (connectToId) {
-        localStorage.setItem("sessionId", JSON.stringify(connectToId));
-    }
     const [sessionID] = useStateWithLocalStorage("sessionId", makeID(4));
     const socketEnabled = useSelector((state) => state.sockets.enabled);
     const controlId = useSelector((state) => state.sockets.controlId);
     let navigate = useNavigate();
     const dispatch = useDispatch();
-    const retrievedTarkovTrackerToken = useRef(false);
-    const tarkovTrackerProgressInterval = useRef(false);
-    const tarkovTrackerUpdatePending = useRef(false);
-    const tabHasFocus = useRef(true);
+    const retrievedTarkovTrackerTokenRef = useRef(false);
+    const tarkovTrackerProgressIntervalRef = useRef(false);
+    const tarkovTrackerUpdatePendingRef = useRef(false);
+    const tabHasFocusRef = useRef(true);
 
-    if (connectToId) {
-        dispatch(enableConnection());
-    }
+    useEffect(() => {
+        if (connectToId) {
+            localStorage.setItem("sessionId", JSON.stringify(connectToId));
+            dispatch(enableConnection());
+        }
+    }, [connectToId, dispatch]);
 
     const useTarkovTracker = useSelector((state) => state.settings[state.settings.gameMode].useTarkovTracker);
 
@@ -199,18 +202,18 @@ function App() {
     const tarkovTrackerAPIKey = useSelector((state) => state.settings[state.settings.gameMode].tarkovTrackerAPIKey);
 
     const updateTarkovTrackerData = useCallback(() => {
-        tarkovTrackerUpdatePending.current = false;
-        retrievedTarkovTrackerToken.current = tarkovTrackerAPIKey;
+        tarkovTrackerUpdatePendingRef.current = false;
+        retrievedTarkovTrackerTokenRef.current = tarkovTrackerAPIKey;
         dispatch(fetchTarkovTrackerProgress(tarkovTrackerAPIKey));
     }, [dispatch, tarkovTrackerAPIKey]);
 
     const scheduleTarkovTrackerUpdate = useCallback(() => {
-        clearInterval(tarkovTrackerProgressInterval.current);
-        tarkovTrackerProgressInterval.current = setInterval(
+        clearInterval(tarkovTrackerProgressIntervalRef.current);
+        tarkovTrackerProgressIntervalRef.current = setInterval(
             () => {
-                if (!tabHasFocus.current) {
+                if (!tabHasFocusRef.current) {
                     // window doesn't have focus, so postpone the update until it does
-                    tarkovTrackerUpdatePending.current = true;
+                    tarkovTrackerUpdatePendingRef.current = true;
                     return;
                 }
                 updateTarkovTrackerData();
@@ -222,8 +225,8 @@ function App() {
     // monitor window focus for Tarkov Tracker updates
     useEffect(() => {
         const handleFocus = () => {
-            tabHasFocus.current = true;
-            if (!tarkovTrackerUpdatePending.current) {
+            tabHasFocusRef.current = true;
+            if (!tarkovTrackerUpdatePendingRef.current) {
                 return;
             }
             scheduleTarkovTrackerUpdate();
@@ -231,7 +234,7 @@ function App() {
         };
 
         const handleBlur = () => {
-            tabHasFocus.current = false;
+            tabHasFocusRef.current = false;
         };
 
         window.addEventListener("focus", handleFocus);
@@ -245,62 +248,64 @@ function App() {
     }, [scheduleTarkovTrackerUpdate, updateTarkovTrackerData]);
 
     useEffect(() => {
-        if (!tarkovTrackerProgressInterval.current && useTarkovTracker) {
+        if (!tarkovTrackerProgressIntervalRef.current && useTarkovTracker) {
             scheduleTarkovTrackerUpdate();
         }
 
         if (
             useTarkovTracker &&
             progressStatus !== "loading" &&
-            retrievedTarkovTrackerToken.current !== tarkovTrackerAPIKey
+            retrievedTarkovTrackerTokenRef.current !== tarkovTrackerAPIKey
         ) {
             updateTarkovTrackerData();
         }
 
-        if (tarkovTrackerProgressInterval.current && !useTarkovTracker) {
-            clearInterval(tarkovTrackerProgressInterval.current);
-            tarkovTrackerProgressInterval.current = false;
+        if (tarkovTrackerProgressIntervalRef.current && !useTarkovTracker) {
+            clearInterval(tarkovTrackerProgressIntervalRef.current);
+            tarkovTrackerProgressIntervalRef.current = false;
         }
 
         return () => {
-            clearInterval(tarkovTrackerProgressInterval.current);
-            tarkovTrackerProgressInterval.current = false;
+            clearInterval(tarkovTrackerProgressIntervalRef.current);
+            tarkovTrackerProgressIntervalRef.current = false;
         };
     }, [progressStatus, scheduleTarkovTrackerUpdate, updateTarkovTrackerData, tarkovTrackerAPIKey, useTarkovTracker]);
 
     useEffect(() => {
+        const handleMessage = (rawMessage) => {
+            const message = JSON.parse(rawMessage.data);
+
+            if (message.type !== "command") {
+                return;
+            }
+
+            if (message.data.type === "playerPosition") {
+                dispatch(setPlayerPosition(message.data));
+                return;
+            }
+
+            navigate(`/${message.data.type}/${message.data.value}`);
+        };
+        const handleOpen = () => {
+            console.log("Connected to socket server");
+            //console.log(socket);
+
+            dispatch(setConnectionStatus("connected"));
+        };
+        const handleClose = () => {
+            console.log("Disconnected from socket server");
+
+            dispatch(setConnectionStatus("idle"));
+        };
         const connect = function connect() {
             dispatch(setConnectionStatus("connecting"));
             clearInterval(socketMonitorInterval);
             socket = new RemoteWebSocket(sessionID);
+            socket.addEventListener("message", handleMessage);
 
-            socket.addEventListener("message", (rawMessage) => {
-                const message = JSON.parse(rawMessage.data);
+            socket.addEventListener("open", handleOpen);
 
-                if (message.type !== "command") {
-                    return;
-                }
-
-                if (message.data.type === "playerPosition") {
-                    dispatch(setPlayerPosition(message.data));
-                    return;
-                }
-
-                navigate(`/${message.data.type}/${message.data.value}`);
-            });
-
-            socket.addEventListener("open", () => {
-                console.log("Connected to socket server");
-                //console.log(socket);
-
-                dispatch(setConnectionStatus("connected"));
-            });
-
-            socket.addEventListener("close", () => {
-                console.log("Disconnected from socket server");
-
-                dispatch(setConnectionStatus("idle"));
-            });
+            socket.addEventListener("close", handleClose);
 
             socketMonitorInterval = setInterval(() => {
                 if (socket.readyState === 3 && socketEnabled) {
@@ -315,8 +320,18 @@ function App() {
         }
 
         return () => {
-            // socket.close();
-            // clearInterval(socketMonitorInterval);
+            if (socket !== "impossible") {
+                // this cleanup function fires when the page is navigated, which breaks the socket connection
+                // but the linter complains if we don't have cleanup code, so...
+                return;
+            }
+            if (socket) {
+                socket.removeEventListener("message", handleMessage);
+                socket.removeEventListener("open", handleOpen);
+                socket.removeEventListener("close", handleClose);
+                socket.close();
+            }
+            clearInterval(socketMonitorInterval);
         };
     }, [socketEnabled, sessionID, navigate, dispatch]);
 
@@ -353,7 +368,7 @@ function App() {
                 key="connection-wrapper"
                 sessionID={sessionID}
                 socketEnabled={socketEnabled}
-                onClick={(e) => dispatch(enableConnection())}
+                onClick={() => dispatch(enableConnection())}
             />
         </Suspense>
     );
@@ -446,7 +461,7 @@ function App() {
                         <Route
                             path={"/barter"}
                             key="barter-route"
-                            element={[<Navigate to="/barters" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/barters" key="navigate-barters" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/items"}
@@ -461,12 +476,12 @@ function App() {
                         <Route
                             path={"/item"}
                             key="item-route"
-                            element={[<Navigate to="/items" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/items" key="navigate-items" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/items/ammo"}
                             key="items-ammo-route"
-                            element={[<Navigate to="/ammo" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/ammo" key="navigate-ammo" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/items/helmets"}
@@ -511,7 +526,10 @@ function App() {
                         <Route
                             path={"/items/backpack"}
                             key="backpack-route"
-                            element={[<Navigate to="/items/backpacks" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/backpacks" key="navigate-backpack" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/rigs"}
@@ -526,7 +544,10 @@ function App() {
                         <Route
                             path={"/items/chest-rig"}
                             key="chest-rig-route"
-                            element={[<Navigate to="/items/rigs" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/rigs" key="navigate-chest-rig" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/suppressors"}
@@ -541,7 +562,10 @@ function App() {
                         <Route
                             path={"/items/silencer"}
                             key="silencer-route"
-                            element={[<Navigate to="/items/suppressors" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/suppressors" key="navigate-silencer" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/guns"}
@@ -566,7 +590,10 @@ function App() {
                         <Route
                             path={"/items/weapon-mod"}
                             key="weapon-mod-route"
-                            element={[<Navigate to="/items/mods" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/mods" key="navigate-weapon-mod" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/pistol-grips"}
@@ -601,7 +628,10 @@ function App() {
                         <Route
                             path={"/items/common-container"}
                             key="common-container-route"
-                            element={[<Navigate to="/items/containers" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/containers" key="navigate-common-container" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/grenades"}
@@ -616,7 +646,10 @@ function App() {
                         <Route
                             path={"/items/throwable-weapon"}
                             key="throwable-weapon-route"
-                            element={[<Navigate to="/items/grenades" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/grenades" key="navigate-grenades" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/headsets"}
@@ -631,7 +664,10 @@ function App() {
                         <Route
                             path={"/items/headphones"}
                             key="headphones-route"
-                            element={[<Navigate to="/items/headsets" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/headsets" key="navigate-headsets" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path={"/items/keys"}
@@ -646,7 +682,7 @@ function App() {
                         <Route
                             path={"/items/key"}
                             key="key-route"
-                            element={[<Navigate to="/items/keys" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/items/keys" key="navigate-keys" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/items/provisions"}
@@ -661,7 +697,10 @@ function App() {
                         <Route
                             path={"/items/food-and-drink"}
                             key="food-and-drink-route"
-                            element={[<Navigate to="/items/provisions" />, remoteControlSessionElement]}
+                            element={[
+                                <Navigate to="/items/provisions" key="navigate-provisions" />,
+                                remoteControlSessionElement,
+                            ]}
                         />
                         <Route
                             path="/items/:bsgCategoryName"
@@ -706,7 +745,7 @@ function App() {
                         <Route
                             path={"/boss"}
                             key="boss-route"
-                            element={[<Navigate to="/bosses" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/bosses" key="navigate-bosses" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/boss/:bossName"}
@@ -731,7 +770,7 @@ function App() {
                         <Route
                             path={"/trader"}
                             key="trader-route"
-                            element={[<Navigate to="/traders" />, remoteControlSessionElement]}
+                            element={[<Navigate to="/traders" key="navigate-traders" />, remoteControlSessionElement]}
                         />
                         <Route
                             path={"/trader/:traderName"}
@@ -859,6 +898,16 @@ function App() {
                             element={[
                                 <Suspense fallback={<Loading />} key="suspense-wipe-length-wrapper">
                                     <WipeLength key="wipe-length-wrapper" />
+                                </Suspense>,
+                                remoteControlSessionElement,
+                            ]}
+                        />
+                        <Route
+                            path={"/season"}
+                            key="season-route"
+                            element={[
+                                <Suspense fallback={<Loading />} key="suspense-season-wrapper">
+                                    <Season key="season-wrapper" />
                                 </Suspense>,
                                 remoteControlSessionElement,
                             ]}

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useSelector } from "react-redux";
 import { Trans, useTranslation } from "react-i18next";
 
@@ -19,7 +19,7 @@ function Prestiges() {
     const gameMode = useSelector((state) => state.settings.gameMode);
 
     const noPrestigesWarning = useMemo(() => {
-        if (gameMode === "pve") {
+        if (gameMode === "pvp-season") {
             return (
                 <div>
                     <p>
