@@ -56,7 +56,7 @@ import useCraftsData from "../../features/crafts/index.js";
 import useQuestsData, { usePrestigeData } from "../../features/quests/index.js";
 import useItemsData, { useHandbookData } from "../../features/items/index.js";
 import useMapsData from "../../features/maps/index.js";
-import { toggleHideDogtagBarters } from "../../features/settings/settingsSlice.mjs";
+import { toggleHideDogtagBarters, toggleHidePriceHistory } from "../../features/settings/settingsSlice.mjs";
 
 import formatPrice from "../../modules/format-price.js";
 import bestPrice from "../../modules/best-price.js";
@@ -817,21 +817,28 @@ The max profitable price is impacted by the intel center and hideout management 
                         {sectionHeader(
                             mdiChartLine,
                             t("Flea price history"),
-                            !hidePriceHistory && (
-                                <Select
-                                    placeholder={
-                                        priceDaysLabels.find((l) => l.value === priceDays)?.label ??
-                                        t("{{count}} days_other", { count: priceDays })
-                                    }
-                                    defaultValue={priceDays}
-                                    options={priceDaysLabels}
-                                    className="basic-multi-select historical-price-days"
-                                    classNamePrefix="select"
-                                    onChange={(event) => {
-                                        setPriceDays(event.value);
-                                    }}
+                            <>
+                                <ToggleFilter
+                                    checked={hidePriceHistory}
+                                    label={t("Hide flea price history")}
+                                    onChange={() => dispatch(toggleHidePriceHistory())}
                                 />
-                            ),
+                                {!hidePriceHistory && (
+                                    <Select
+                                        placeholder={
+                                            priceDaysLabels.find((l) => l.value === priceDays)?.label ??
+                                            t("{{count}} days_other", { count: priceDays })
+                                        }
+                                        defaultValue={priceDays}
+                                        options={priceDaysLabels}
+                                        className="basic-multi-select historical-price-days"
+                                        classNamePrefix="select"
+                                        onChange={(event) => {
+                                            setPriceDays(event.value);
+                                        }}
+                                    />
+                                )}
+                            </>,
                         )}
                         <div className="information-content">
                             {!hidePriceHistory && <PriceGraph item={currentItemData} days={priceDays} />}
